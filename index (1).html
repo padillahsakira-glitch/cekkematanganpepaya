@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PepayaCheck – Deteksi Kematangan Pepaya + Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--forest:#12372a;--forest2:#1d4d3b;--orange:#ff7a1a;--flesh:#ffb27a;--seed:#1a1a1a;--bg:#f3f7f3;--card:#fff;--text:#16241d;--muted:#5d6e64;--line:#dbe6dd;--g:#4fa22e;--y:#e8b91a;--o:#ff7a1a;--b:#7a4a26;--rad:20px}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1f17;--card:#16312a;--text:#eaf3ec;--muted:#9db3a5;--line:#27483c}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+h1,h2,h3{font-family:'Bricolage Grotesque','DM Sans',system-ui,sans-serif;margin:0}
+.hero{background:var(--forest);color:#f2fbf4;padding:28px 20px 64px;border-radius:0 0 40px 40px;overflow:hidden}
+.nav{max-width:1000px;margin:0 auto 36px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.nav a{color:#cfe9d6;text-decoration:none;font-weight:500;margin-left:18px;font-size:.95rem}
+.hero-in{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center}
+.hero h1{font-size:clamp(2.2rem,6vw,3.8rem);line-height:1.05;font-weight:800}
+.hero p{color:#bfdcc8;max-width:46ch;margin:16px 0 24px;font-size:1.05rem}
+.cta{display:inline-block;background:var(--orange);color:#fff;font-weight:700;padding:13px 26px;border-radius:99px;text-decoration:none;border:0;font:inherit;font-weight:700;cursor:pointer}
+.cta.ghost{background:transparent;border:2px solid #7fb391;color:#dff3e4;margin-left:8px}
+.papaya{width:100%;max-width:380px;justify-self:center;transform:rotate(-8deg);filter:drop-shadow(0 24px 30px rgba(0,0,0,.35))}
+main{max-width:1000px;margin:-36px auto 0;padding:0 16px 120px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:22px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+h2{font-size:1.5rem;margin-bottom:6px}
+.muted{color:var(--muted);font-size:.92rem}
+.stage{position:relative;aspect-ratio:4/3;border-radius:16px;margin-top:14px;background:repeating-conic-gradient(var(--bg) 0 25%,transparent 0 50%) 0 0/24px 24px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);overflow:hidden;padding:12px}
+.stage img,.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;background:var(--card)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{font:inherit;font-weight:700;padding:10px 16px;border-radius:12px;border:2px solid var(--forest2);background:transparent;color:var(--text);cursor:pointer}
+@media (prefers-color-scheme:dark){.btn{border-color:#4a8d73}}
+.btn.go{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.cta:focus-visible,.chip:focus-visible,#fab:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+input[type=file]{display:none}
+.hidden{display:none!important}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%;min-height:220px;color:var(--muted)}
+.tag{display:inline-block;padding:3px 12px;border-radius:99px;color:#fff;font-weight:700;font-size:.82rem;margin-bottom:8px}
+.gauge{position:relative;height:16px;border-radius:99px;margin:26px 0 8px;background:linear-gradient(90deg,var(--g),var(--y) 45%,var(--o) 75%,var(--b))}
+.pin{position:absolute;top:-8px;width:6px;height:32px;border-radius:3px;background:var(--text);transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.9,.3,1.2);left:0}
+.scale{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)}
+.bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.88rem}
+.bar b{width:62px;font-weight:500}
+.track{flex:1;height:10px;background:var(--bg);border-radius:6px;overflow:hidden}
+.fill{height:100%;width:0;transition:width .6s}
+.bar i{width:40px;text-align:right;font-style:normal;color:var(--muted)}
+ul.tips{padding-left:18px;margin:6px 0 0}
+.stages{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.stg{border-radius:14px;padding:14px;color:#fff}
+.stg b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:1.05rem}
+.stg span{font-size:.84rem;opacity:.95}
+/* chat */
+#fab{position:fixed;right:18px;bottom:18px;width:60px;height:60px;border-radius:50%;border:0;background:var(--orange);color:#fff;font-size:1.6rem;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.3);z-index:20}
+#dot{position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:#e23b3b;border:2px solid #fff}
+#chat{position:fixed;right:18px;bottom:90px;width:min(380px,calc(100vw - 24px));height:min(540px,calc(100vh - 120px));background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 50px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;z-index:20}
+.ch{background:var(--forest);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.ch b{font-family:'Bricolage Grotesque',sans-serif;font-size:1.05rem}.ch small{display:block;color:#a9d3b6}
+.ch button{background:none;border:0;color:#fff;font-size:1.3rem;cursor:pointer}
+#log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:84%;padding:9px 13px;border-radius:16px;font-size:.93rem;white-space:pre-line}
+.m.bot{background:var(--bg);border-bottom-left-radius:4px;align-self:flex-start}
+.m.me{background:var(--forest2);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:0 12px 8px}
+.chip{flex:none;font:inherit;font-size:.82rem;padding:6px 12px;border-radius:99px;border:1.5px solid var(--forest2);background:transparent;color:var(--text);cursor:pointer}
+@media (prefers-color-scheme:dark){.chip{border-color:#4a8d73}}
+.cf{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
+.cf input{flex:1;font:inherit;padding:10px 14px;border-radius:99px;border:1.5px solid var(--line);background:var(--bg);color:var(--text)}
+.cf button{border:0;border-radius:99px;background:var(--orange);color:#fff;font-weight:700;padding:0 18px;cursor:pointer;font:inherit;font-weight:700}
+.typing{display:inline-flex;gap:4px}.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:b 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{transform:translateY(-5px)}}
+@media (max-width:760px){.hero-in,.grid{grid-template-columns:1fr}.papaya{max-width:240px;order:-1}.stages{grid-template-columns:1fr 1fr}.nav a{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="nav"><span>PepayaCheck</span><nav><a href="#deteksi">Deteksi</a><a href="#panduan">Panduan warna</a></nav></div>
+  <div class="hero-in">
+    <div>
+      <h1>Sudah matang, atau belum?</h1>
+      <p>Foto kulit pepaya, dan PepayaCheck membaca warnanya untuk menentukan tahap kematangan. Ada pertanyaan soal pepaya? Tanya langsung di chat.</p>
+      <a class="cta" href="#deteksi">Mulai deteksi</a><button class="cta ghost" id="heroChat">Tanya di chat</button>
+    </div>
+    <svg class="papaya" viewBox="0 0 300 420" role="img" aria-label="Ilustrasi pepaya dibelah">
+      <path d="M150 12C70 12 22 120 22 240c0 100 52 170 128 170s128-70 128-170C278 120 230 12 150 12z" fill="#e8a319"/>
+      <path d="M150 28C84 28 40 128 40 240c0 90 46 152 110 152s110-62 110-152C260 128 216 28 150 28z" fill="#ff8a2b"/>
+      <path d="M150 70C112 70 84 140 84 230c0 70 28 118 66 118s66-48 66-118C216 140 188 70 150 70z" fill="#ffc48e"/>
+      <path d="M150 96C128 96 112 150 112 222c0 52 16 90 38 90s38-38 38-90c0-72-16-126-38-126z" fill="#d96a12" opacity=".55"/>
+      <g fill="#1a1a1a"><circle cx="150" cy="130" r="9"/><circle cx="134" cy="160" r="8"/><circle cx="166" cy="162" r="8"/><circle cx="150" cy="192" r="9"/><circle cx="132" cy="222" r="8"/><circle cx="168" cy="224" r="8"/><circle cx="150" cy="254" r="9"/><circle cx="136" cy="284" r="7"/><circle cx="164" cy="285" r="7"/></g>
+      <g fill="#fff" opacity=".5"><circle cx="147" cy="127" r="2.5"/><circle cx="147" cy="189" r="2.5"/><circle cx="147" cy="251" r="2.5"/></g>
+    </svg>
+  </div>
+</header>
+
+<main>
+  <section class="panel" id="deteksi">
+    <h2>Deteksi kematangan</h2>
+    <p class="muted">Gunakan foto satu buah dengan cahaya terang dan latar polos (putih atau abu-abu).</p>
+    <div class="grid">
+      <div>
+        <div class="stage" id="stage"><span id="ph">Unggah foto atau buka kamera</span><img id="preview" alt="Foto pepaya"><video id="video" playsinline muted></video></div>
+        <div class="btns">
+          <label class="btn" tabindex="0">Unggah foto<input type="file" id="file" accept="image/*"></label>
+          <button class="btn" id="camBtn">Buka kamera</button>
+          <button class="btn hidden" id="snapBtn">Ambil foto</button>
+          <button class="btn go" id="detectBtn" disabled>Deteksi sekarang</button>
+        </div>
+      </div>
+      <div id="out">
+        <div class="empty" id="empty"><div style="font-size:2.4rem">🔍</div><p>Hasil deteksi akan muncul di sini.</p></div>
+        <div class="hidden" id="result">
+          <span class="tag" id="tag"></span>
+          <h3 id="title" style="font-size:1.6rem"></h3>
+          <p id="desc" class="muted"></p>
+          <div class="gauge"><div class="pin" id="pin"></div></div>
+          <div class="scale"><span>Mentah</span><span>Matang</span><span>Terlalu matang</span></div>
+          <div id="bars" style="margin-top:14px"></div>
+          <b>Saran</b><ul class="tips" id="tips"></ul>
+          <div class="btns"><button class="btn" id="askBtn">Tanya soal hasil ini</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panduan">
+    <h2>Panduan warna kulit</h2>
+    <div class="stages">
+      <div class="stg" style="background:var(--g)"><b>Mentah</b><span>Hijau tua, keras, getah banyak.</span></div>
+      <div class="stg" style="background:#b8900f"><b>Mengkal</b><span>Hijau bercampur kuning.</span></div>
+      <div class="stg" style="background:#d8620d"><b>Matang</b><span>Kuning-oranye merata, harum.</span></div>
+      <div class="stg" style="background:var(--b)"><b>Terlalu matang</b><span>Oranye gelap, bercak cokelat.</span></div>
+    </div>
+    <p class="muted">Hasil berupa perkiraan dari analisis warna. Cahaya dan varietas pepaya dapat memengaruhi hasil.</p>
+  </section>
+</main>
+
+<button id="fab" aria-label="Buka chat">💬<span id="dot" class="hidden"></span></button>
+<section id="chat" class="hidden" aria-label="Chat pepaya">
+  <div class="ch"><div><b>Asisten Pepaya</b><small>Tanya apa saja soal pepaya</small></div><button id="closeChat" aria-label="Tutup chat">✕</button></div>
+  <div id="log"></div>
+  <div class="chips" id="chips"></div>
+  <form class="cf" id="cf"><input id="msg" placeholder="Tulis pertanyaan…" autocomplete="off" aria-label="Pesan"><button>Kirim</button></form>
+</section>
+
+<script>
+const $=id=>document.getElementById(id);
+const preview=$('preview'),video=$('video');
+let stream=null,source=null,lastStage=null;
+
+/* ---------- Deteksi ---------- */
+function show(el){$('ph').style.display='none';preview.style.display=el===preview?'block':'none';video.style.display=el===video?'block':'none'}
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('snapBtn').classList.add('hidden');$('camBtn').textContent='Buka kamera'}
+function ready(){preview.onload=()=>{source=preview;$('detectBtn').disabled=false}}
+$('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;stopCam();ready();preview.src=URL.createObjectURL(f);show(preview)});
+$('camBtn').addEventListener('click',async()=>{
+  if(stream){stopCam();return}
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});video.srcObject=stream;await video.play();show(video);$('snapBtn').classList.remove('hidden');$('camBtn').textContent='Tutup kamera'}
+  catch(e){alert('Kamera tidak dapat diakses. Izinkan akses kamera atau gunakan Unggah foto.')}
+});
+$('snapBtn').addEventListener('click',()=>{const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0);ready();preview.src=c.toDataURL('image/jpeg',.92);stopCam();show(preview)});
+
+function hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}return[h,mx?d/mx:0,mx]}
+function analyze(img){
+  const W=160,H=120,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.drawImage(img,0,0,W,H);
+  const w=Math.floor(W*.7),h=Math.floor(H*.7),p=x.getImageData(Math.floor(W*.15),Math.floor(H*.15),w,h).data;
+  let g=0,y=0,o=0,b=0,n=0;
+  for(let i=0;i<p.length;i+=4){const[hu,s,v]=hsv(p[i],p[i+1],p[i+2]);if(s<.25||v<.12)continue;n++;
+    if(hu>=65&&hu<=170)g++;else if(hu>=40&&hu<65)y++;else if(hu<40||hu>340){v<.45?b++:o++}}
+  if(n<w*h*.05)return null;return{g:g/n,y:y/n,o:o/n,b:b/n}
+}
+const ST={
+ mentah:{n:'Mentah',c:'var(--g)',d:'Kulit masih didominasi warna hijau, buah belum matang.',t:['Tunggu 5–7 hari di suhu ruang sampai menguning.','Cocok untuk sayur atau rujak pepaya muda.']},
+ mengkal:{n:'Setengah matang (mengkal)',c:'#b8900f',d:'Warna kulit bercampur hijau dan kuning, buah sedang matang.',t:['Diamkan 2–3 hari sampai oranye merata.','Bungkus kertas koran agar lebih cepat matang.']},
+ matang:{n:'Matang',c:'#d8620d',d:'Kulit kuning-oranye merata, buah siap dimakan.',t:['Waktu terbaik untuk dimakan.','Simpan di kulkas agar tahan 2–3 hari.']},
+ lewat:{n:'Terlalu matang',c:'var(--b)',d:'Banyak warna oranye gelap atau cokelat, buah kemungkinan sangat lunak.',t:['Segera makan atau jadikan jus dan smoothie.','Buang jika berbau asam atau terlalu berair.']}
+};
+const cls=r=>r.b>=.3?'lewat':r.g>=.6?'mentah':(r.g>=.2||r.y>=.35)?'mengkal':'matang';
+$('detectBtn').addEventListener('click',()=>{
+  if(!source)return;const r=analyze(source);$('empty').classList.add('hidden');$('result').classList.remove('hidden');
+  if(!r){$('tag').style.background='var(--muted)';$('tag').textContent='Gagal';$('title').textContent='Buah tidak terdeteksi';$('desc').textContent='Warna buah kurang terlihat. Foto lebih dekat dengan cahaya lebih terang.';$('bars').innerHTML='';$('tips').innerHTML='';return}
+  const k=cls(r),s=ST[k];lastStage=k;
+  $('tag').style.background=s.c;$('tag').textContent='Hasil deteksi';$('title').textContent=s.n;$('desc').textContent=s.d;
+  const pos=Math.min(98,Math.max(2,(r.y*.4+r.o*.75+r.b)*100));setTimeout(()=>$('pin').style.left=pos+'%',50);
+  $('bars').innerHTML=[['Hijau',r.g,'var(--g)'],['Kuning',r.y,'var(--y)'],['Oranye',r.o,'var(--o)'],['Cokelat',r.b,'var(--b)']].map(([l,v,c])=>`<div class="bar"><b>${l}</b><div class="track"><div class="fill" style="background:${c}" data-w="${Math.round(v*100)}"></div></div><i>${Math.round(v*100)}%</i></div>`).join('');
+  requestAnimationFrame(()=>document.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%'));
+  $('tips').innerHTML=s.t.map(t=>`<li>${t}</li>`).join('');
+  botSay('Hasil deteksi terbaru: pepaya kamu '+s.n.toLowerCase()+'. Mau saran penyimpanan atau resep yang cocok?',true);
+  if($('chat').classList.contains('hidden'))$('dot').classList.remove('hidden');
+  $('result').scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+
+/* ---------- Chat ---------- */
+const KB=[
+ {k:['ciri','tanda','sudah matang','tanda matang'],a:'Ciri pepaya matang:\n• Kulit kuning-oranye merata\n• Aroma manis harum di pangkal buah\n• Agak lunak saat ditekan lembut\n• Tidak ada getah menetes saat tangkai dipetik'},
+ {k:['mematangkan','matangkan','karbit','mengkal','cepat matang'],a:'Agar pepaya cepat matang:\n• Bungkus dengan kertas koran dan simpan di tempat hangat\n• Taruh bersama pisang atau apel matang dalam kantong kertas\n• Biasanya matang dalam 2–4 hari\nHindari karbit sembarangan, lebih aman matang alami.'},
+ {k:['simpan','menyimpan','awet','tahan','kulkas','penyimpanan'],a:'Penyimpanan:\n• Belum matang: suhu ruang, jauh dari sinar matahari langsung\n• Sudah matang: kulkas, tahan sekitar 3–5 hari\n• Sudah dipotong: wadah tertutup di kulkas, habiskan dalam 2 hari'},
+ {k:['gizi','manfaat','nutrisi','vitamin','sehat','khasiat'],a:'Pepaya kaya vitamin C, vitamin A, serat, dan enzim papain yang membantu pencernaan. Rendah kalori dan cocok sebagai camilan sehat.'},
+ {k:['kalori','diet','kurus','berat badan'],a:'Sekitar 40–45 kkal per 100 gram pepaya matang. Berserat dan mengenyangkan, jadi cocok untuk camilan saat diet. Tetap seimbangkan dengan menu lain ya.'},
+ {k:['resep','olah','masak','jus','rujak','sayur','smoothie','olahan'],a:'Ide olahan:\n• Matang: jus, salad buah, es pepaya, puding\n• Mengkal: manisan atau selai\n• Mentah: sayur pepaya muda, lalapan, acar, rujak\n• Terlalu matang: smoothie atau campuran kue'},
+ {k:['pilih','memilih','beli','pasar','belanja'],a:'Tips memilih pepaya:\n• Pilih yang bentuknya utuh, tanpa bercak hitam besar atau retak\n• Kulit sudah mulai kuning jika ingin dimakan 1–2 hari lagi\n• Pilih yang berat untuk ukurannya, biasanya lebih berair\n• Cium aroma di pangkal buah'},
+ {k:['getah','biji','racun','beracun','aman'],a:'Getah pepaya mentah bisa menyebabkan gatal pada kulit sensitif, jadi cuci tangan setelah memegangnya. Biji pepaya dapat dimakan dalam jumlah kecil (rasanya pedas seperti lada), tapi tidak perlu dikonsumsi banyak.'},
+ {k:['hamil','bumil','menyusui'],a:'Pepaya matang umumnya aman dalam porsi wajar, tetapi pepaya mentah atau setengah matang sebaiknya dihindari saat hamil karena kandungan getahnya. Untuk kepastian, konsultasikan ke dokter atau bidan.'},
+ {k:['diabetes','gula','kencing manis'],a:'Pepaya punya indeks glikemik sedang. Penderita diabetes biasanya boleh makan dalam porsi kecil, misalnya 1 potong sedang, tetapi sebaiknya konsultasi ke dokter atau ahli gizi.'},
+ {k:['jenis','varietas','california','bangkok','thailand','jawa','calina'],a:'Jenis populer di Indonesia: pepaya California (Calina) berukuran kecil dan manis, pepaya Bangkok berukuran besar dan teksturnya agak padat, dan pepaya Jawa yang lazim dipakai sebagai sayur saat muda.'},
+ {k:['potong','kupas','makan','membelah'],a:'Cara memotong: belah dua memanjang, keluarkan biji dengan sendok, lalu kerok daging buah atau iris dan kupas kulitnya. Peras sedikit jeruk nipis agar rasanya lebih segar.'},
+ {k:['pencernaan','sembelit','bab','papain','lambung','perut'],a:'Enzim papain dan serat pepaya membantu melancarkan pencernaan dan meredakan sembelit. Makan 1 porsi pepaya matang beserta cukup minum air putih. Bila keluhan berlanjut, periksa ke dokter.'},
+ {k:['cara pakai','website','aplikasi','fitur','akurat','akurasi'],a:'Cara pakai: unggah foto pepaya atau ambil dari kamera, lalu klik Deteksi sekarang. Website membaca proporsi warna hijau, kuning, oranye, dan cokelat pada kulit buah. Hasilnya perkiraan dan paling akurat pada foto yang terang dengan latar polos.'},
+ {k:['hasil','deteksi','terakhir','tadi'],dyn:true},
+ {k:['halo','hai','hi','hallo','pagi','siang','sore','malam','hey'],a:'Halo! Saya asisten PepayaCheck. Tanyakan soal ciri matang, penyimpanan, manfaat, atau resep pepaya ya.'},
+ {k:['terima kasih','makasih','thanks','thx','terimakasih'],a:'Sama-sama! Kalau ada pertanyaan lain soal pepaya, tanya saja.'}
+];
+const CHIPS=['Ciri pepaya matang','Cara mematangkan','Cara menyimpan','Manfaat pepaya','Ide resep','Tips memilih'];
+function norm(s){return s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()}
+function reply(q){
+  const t=norm(q),w=t.split(' ');let best=null,bs=0;
+  for(const e of KB){let s=0;for(const k of e.k){
+    if(k.includes(' '))s+=t.includes(k)?2:0;else if(k.length<4)s+=w.includes(k)?1:0;else s+=w.some(x=>x.startsWith(k))?1:0}
+    if(s>bs){bs=s;best=e}}
+  if(!best)return'Maaf, saya belum paham pertanyaan itu. Coba tanyakan soal ciri matang, cara mematangkan, penyimpanan, manfaat, resep, atau tips memilih pepaya.';
+  if(best.dyn){if(!lastStage)return'Belum ada hasil deteksi. Unggah foto pepaya lalu klik Deteksi sekarang.';const s=ST[lastStage];return'Hasil terakhir: '+s.n+'.\n'+s.d+'\nSaran: '+s.t.join(' ')}
+  return best.a;
+}
+const log=$('log');
+function add(text,who){const d=document.createElement('div');d.className='m '+who;d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+function botSay(text){add(text,'bot')}
+function ask(q){
+  if(!q.trim())return;add(q,'me');
+  const t=document.createElement('div');t.className='m bot';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';log.appendChild(t);log.scrollTop=log.scrollHeight;
+  setTimeout(()=>{t.remove();botSay(reply(q))},550);
+}
+$('chips').innerHTML=CHIPS.map(c=>`<button class="chip" type="button">${c}</button>`).join('');
+$('chips').addEventListener('click',e=>{if(e.target.classList.contains('chip'))ask(e.target.textContent)});
+$('cf').addEventListener('submit',e=>{e.preventDefault();const v=$('msg').value;$('msg').value='';ask(v)});
+function openChat(){$('chat').classList.remove('hidden');$('dot').classList.add('hidden');$('msg').focus()}
+$('fab').addEventListener('click',()=>$('chat').classList.contains('hidden')?openChat():$('chat').classList.add('hidden'));
+$('closeChat').addEventListener('click',()=>$('chat').classList.add('hidden'));
+$('heroChat').addEventListener('click',openChat);
+$('askBtn').addEventListener('click',()=>{openChat();ask('Hasil deteksi terakhir')});
+$('chat').classList.add('hidden');
+botSay('Halo! Saya asisten PepayaCheck. Pilih topik di bawah atau tulis pertanyaanmu.');
+</script>
+</body>
+</html>
