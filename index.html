@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PepayaCheck – Deteksi Kematangan Buah Pepaya</title>
+<style>
+:root{--bg:#fffaf2;--card:#ffffff;--text:#2b2a26;--muted:#6f6b60;--accent:#e8711a;--line:#eadfce;--green:#5aa832;--yellow:#e3b81c;--orange:#e8711a;--brown:#7a4a26}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1a17;--card:#26241f;--text:#f2ede3;--muted:#aaa392;--accent:#f08a3a;--line:#3a372f}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0;font-size:1.8rem}h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:4px 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+.stage{position:relative;aspect-ratio:4/3;background:var(--bg);border:2px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);text-align:center}
+.stage img,.stage video{width:100%;height:100%;object-fit:contain;display:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button,label.btn{font:inherit;padding:10px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--card);color:var(--accent);cursor:pointer;font-weight:600}
+button.primary{background:var(--accent);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+input[type=file]{display:none}
+.hidden{display:none!important}
+#result h2{margin:0 0 4px;font-size:1.5rem}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;color:#fff;margin-bottom:8px}
+.bar{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.9rem}
+.bar b{width:110px;font-weight:500}
+.track{flex:1;height:12px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;width:0;transition:width .5s}
+.bar i{width:44px;text-align:right;font-style:normal;color:var(--muted)}
+.note{font-size:.85rem;color:var(--muted)}
+ul{padding-left:20px;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pepaya<span>Check</span></h1>
+  <p class="sub">Website deteksi kematangan buah pepaya dari foto kulitnya.</p>
+
+  <div class="card">
+    <div class="stage" id="stage">
+      <span id="placeholder">Unggah foto pepaya atau gunakan kamera</span>
+      <img id="preview" alt="Foto pepaya">
+      <video id="video" playsinline muted></video>
+    </div>
+    <div class="btns">
+      <label class="btn">Unggah Foto<input type="file" id="file" accept="image/*"></label>
+      <button id="camBtn">Buka Kamera</button>
+      <button id="snapBtn" class="hidden">Ambil Foto</button>
+      <button id="detectBtn" class="primary" disabled>Deteksi Kematangan</button>
+    </div>
+    <p class="note">Tips: foto satu buah pepaya dengan cahaya terang dan latar polos (putih atau abu-abu) agar hasil lebih akurat.</p>
+  </div>
+
+  <div class="card hidden" id="result">
+    <span class="badge" id="badge"></span>
+    <h2 id="title"></h2>
+    <p id="desc"></p>
+    <div id="bars"></div>
+    <p><b>Saran:</b></p>
+    <ul id="tips"></ul>
+  </div>
+
+  <div class="card">
+    <b>Panduan warna kulit pepaya</b>
+    <ul>
+      <li><b>Mentah:</b> hijau tua hingga hijau penuh, keras.</li>
+      <li><b>Setengah matang (mengkal):</b> hijau bercampur kuning, mulai agak lunak.</li>
+      <li><b>Matang:</b> kuning hingga oranye merata, aroma harum.</li>
+      <li><b>Terlalu matang:</b> oranye gelap, bercak cokelat, sangat lunak.</li>
+    </ul>
+    <p class="note">Catatan: hasil berdasarkan analisis warna dan hanya perkiraan. Kondisi cahaya dan varietas pepaya bisa memengaruhi hasil.</p>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const preview = $('preview'), video = $('video'), placeholder = $('placeholder');
+let stream = null, source = null; // source: elemen gambar yang akan dianalisis
+
+function showOnly(el){
+  placeholder.style.display = 'none';
+  preview.style.display = el === preview ? 'block' : 'none';
+  video.style.display = el === video ? 'block' : 'none';
+}
+function stopCam(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  $('snapBtn').classList.add('hidden');
+  $('camBtn').textContent = 'Buka Kamera';
+}
+
+$('file').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  stopCam();
+  preview.onload = () => { source = preview; $('detectBtn').disabled = false; };
+  preview.src = URL.createObjectURL(f);
+  showOnly(preview);
+  $('result').classList.add('hidden');
+});
+
+$('camBtn').addEventListener('click', async () => {
+  if(stream){ stopCam(); return; }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject = stream; await video.play();
+    showOnly(video);
+    $('snapBtn').classList.remove('hidden');
+    $('camBtn').textContent = 'Tutup Kamera';
+  }catch(err){
+    alert('Kamera tidak dapat diakses. Izinkan akses kamera atau gunakan Unggah Foto.');
+  }
+});
+
+$('snapBtn').addEventListener('click', () => {
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video,0,0);
+  preview.onload = () => { source = preview; $('detectBtn').disabled = false; };
+  preview.src = c.toDataURL('image/jpeg',0.92);
+  stopCam(); showOnly(preview);
+});
+
+function rgb2hsv(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  let h=0;
+  if(d){
+    if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+  }
+  return [h, mx?d/mx:0, mx];
+}
+
+function analyze(img){
+  const W=160, H=120, c=document.createElement('canvas');
+  c.width=W; c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(img,0,0,W,H);
+  // ambil area tengah (70%) agar tepi/latar lebih sedikit berpengaruh
+  const x0=Math.floor(W*.15), y0=Math.floor(H*.15), w=Math.floor(W*.7), h=Math.floor(H*.7);
+  const px=ctx.getImageData(x0,y0,w,h).data;
+  let g=0,y=0,o=0,b=0,n=0;
+  for(let i=0;i<px.length;i+=4){
+    const [hu,s,v]=rgb2hsv(px[i],px[i+1],px[i+2]);
+    if(s<0.25||v<0.12) continue; // abaikan latar putih/abu-abu dan bayangan gelap
+    n++;
+    if(hu>=65&&hu<=170) g++;
+    else if(hu>=40&&hu<65) y++;
+    else if(hu<40||hu>340){ if(v<0.45) b++; else o++; }
+  }
+  if(n<w*h*0.05) return null;
+  return {g:g/n,y:y/n,o:o/n,b:b/n};
+}
+
+const STAGES = {
+  mentah:{name:'Mentah',color:'var(--green)',desc:'Kulit buah masih didominasi warna hijau, tandanya buah belum matang.',tips:['Tunggu 5–7 hari pada suhu ruang hingga warna menguning.','Cocok untuk sayur, lalapan, atau rujak pepaya muda.']},
+  mengkal:{name:'Setengah Matang (Mengkal)',color:'var(--yellow)',desc:'Warna kulit bercampur hijau dan kuning, buah sedang dalam proses pematangan.',tips:['Diamkan 2–3 hari di suhu ruang sampai oranye merata.','Bungkus kertas koran agar pematangan lebih cepat.']},
+  matang:{name:'Matang',color:'var(--orange)',desc:'Kulit berwarna kuning-oranye merata, buah siap dimakan.',tips:['Waktu terbaik untuk dikonsumsi.','Simpan di kulkas agar tahan 2–3 hari.']},
+  lewat:{name:'Terlalu Matang',color:'var(--brown)',desc:'Terdeteksi banyak warna oranye gelap atau cokelat, buah kemungkinan sudah sangat lunak.',tips:['Segera konsumsi atau olah menjadi jus dan smoothie.','Buang jika berbau asam atau berair berlebihan.']}
+};
+
+function classify(r){
+  if(r.b>=0.3) return 'lewat';
+  if(r.g>=0.6) return 'mentah';
+  if(r.g>=0.2||r.y>=0.35) return 'mengkal';
+  return 'matang';
+}
+
+$('detectBtn').addEventListener('click', () => {
+  if(!source) return;
+  const r = analyze(source);
+  const box = $('result');
+  box.classList.remove('hidden');
+  if(!r){
+    $('badge').style.background='var(--muted)'; $('badge').textContent='Gagal';
+    $('title').textContent='Buah tidak terdeteksi';
+    $('desc').textContent='Warna buah tidak cukup terlihat. Coba foto lebih dekat dengan pencahayaan lebih terang.';
+    $('bars').innerHTML=''; $('tips').innerHTML='';
+    return;
+  }
+  const st = STAGES[classify(r)];
+  $('badge').style.background = st.color; $('badge').textContent = 'Hasil Deteksi';
+  $('title').textContent = st.name;
+  $('desc').textContent = st.desc;
+  const rows = [['Hijau',r.g,'var(--green)'],['Kuning',r.y,'var(--yellow)'],['Oranye',r.o,'var(--orange)'],['Cokelat',r.b,'var(--brown)']];
+  $('bars').innerHTML = rows.map(([l,v,c])=>`<div class="bar"><b>${l}</b><div class="track"><div class="fill" style="background:${c}" data-w="${Math.round(v*100)}"></div></div><i>${Math.round(v*100)}%</i></div>`).join('');
+  requestAnimationFrame(()=>document.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%'));
+  $('tips').innerHTML = st.tips.map(t=>`<li>${t}</li>`).join('');
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+</script>
+</body>
+</html>
